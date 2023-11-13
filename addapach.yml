@@ -1,0 +1,41 @@
+- name: Configuration d'Apache avec SSL
+  hosts: ma_vm
+  become: true
+  tasks:
+    - name: Installer Apache
+      apt:
+        name: apache2
+        state: present
+
+    - name: Activer le module SSL
+      command: a2enmod ssl
+      notify: 
+        - Restart Apache
+
+    - name: Ajouter l'entrée dans /etc/hosts
+      shell:
+        cmd: "grep -q '163.172.148.52 example.com' /etc/hosts || echo '163.172.148.52 example.com' >> /etc/hosts"
+      become: true
+
+    - name: Copier la configuration du site avec HTTPS
+      template:
+        src: "/home/aboubakeur.trichine@Digital-Grenoble.local/Documents/ci.cd.azur/index.html"
+        dest: "/etc/apache2/sites-available/index.html"
+      notify: 
+        - Activate Apache Site
+        
+    - name: Générer un certificat auto-signé
+      command: "sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/apache-selfsigned.key -out /etc/ssl/certs/apache-selfsigned.crt -subj '/C=FR/ST=Some-State/L=City/O=Internet Widgits Pty Ltd/OU=Section/CN=example.com'"
+      notify:
+        - Restart Apache
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+
+    - name: Activate Apache Site
+      command: a2ensite index.html
+      notify:
+        - Restart Apache

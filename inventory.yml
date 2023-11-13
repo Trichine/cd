@@ -1,0 +1,5 @@
+virtualmachines:
+  hosts:
+    ma_vm:
+      ansible_host: 163.172.148.52
+      ansible_user: root
